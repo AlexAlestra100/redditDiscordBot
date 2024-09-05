@@ -21,7 +21,6 @@ CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
 
 def scrape_reddit():
-    print('Scrapping Data...')
     url = config['URL']
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
