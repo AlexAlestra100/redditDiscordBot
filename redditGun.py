@@ -44,8 +44,14 @@ def scrape_reddit():
 
 def is_post_alerted(post):
     current_time = time.time()
+
+    # Filter out expired posts
+    global CACHE
+    CACHE = [(timestamp, cached_post) for timestamp, cached_post in CACHE if current_time - timestamp < CACHE_EXPIRY]
+    
+    # Check if the post is in the filtered CACHE
     for timestamp, cached_post in CACHE:
-        if current_time - timestamp < CACHE_EXPIRY and cached_post['link'] == post['link']:
+        if cached_post['link'] == post['link']:
             return True
     return False
 
