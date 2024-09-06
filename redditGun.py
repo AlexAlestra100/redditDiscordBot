@@ -14,11 +14,14 @@ config = {
     "USER_ID": os.getenv('USER_ID'),
     "URL": os.getenv('URL'),
     "KEYWORDS": os.getenv('KEYWORDS').split(','),
-    "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(',')
+    "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
+    "USER_ID_2": os.getenv('USER_ID_2'),
+    "URL_2": os.getenv('URL_2'),
 }
 
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
+CURR_PRICE = 0.0
 
 def scrape_reddit():
     url = config['URL']
@@ -58,6 +61,26 @@ def is_post_alerted(post):
 def add_post_to_cache(post):
     CACHE.append((time.time(), post))
 
+# Custom scraper for the fish store
+def scrape_fish():
+    url = config['URL_2']
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Find the price
+    price_span = soup.find('span', class_='price-item price-item--regular')
+
+    if price_span:
+        price_text = price_span.text.strip()
+        if price_text:
+            global CURR_PRICE
+            price = float(price_text[1:])
+            if CURR_PRICE != price:
+                CURR_PRICE = price
+                return True
+
+    return False
+
 class MyClient(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,10 +88,11 @@ class MyClient(commands.Bot):
 
     async def on_ready(self):
         channel = bot.get_channel(config['CHANNEL_ID'])
-        await self.watcher.start(channel)
+        await self.watcher1.start(channel)
+        await self.watcher2.start(channel)
 
     @tasks.loop(seconds=20)
-    async def watcher(self, channel):
+    async def watcher1(self, channel):
         posts = scrape_reddit()
         if posts:
             for post_data in posts:
@@ -79,6 +103,14 @@ class MyClient(commands.Bot):
                     add_post_to_cache(post_data)
                 else:
                     print('Post already alerted.')
+            print('Message Sent.')
+
+    @tasks.loop(seconds=21600)
+    async def watcher2(self, channel):
+        if scrape_fish():
+            user_id = config['USER_ID_2']
+            message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
+            await channel.send(message)
             print('Message Sent.')
 
 
