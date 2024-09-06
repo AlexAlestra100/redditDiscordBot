@@ -1,4 +1,5 @@
 import requests
+import asyncio
 from bs4 import BeautifulSoup
 import discord
 from discord.ext import commands, tasks
@@ -88,8 +89,10 @@ class MyClient(commands.Bot):
 
     async def on_ready(self):
         channel = bot.get_channel(config['CHANNEL_ID'])
-        await self.watcher1.start(channel)
-        await self.watcher2.start(channel)
+        await asyncio.gather(
+            self.watcher1.start(channel),
+            self.watcher2.start(channel)
+        )
 
     @tasks.loop(seconds=20)
     async def watcher1(self, channel):
@@ -103,7 +106,7 @@ class MyClient(commands.Bot):
                     add_post_to_cache(post_data)
                 else:
                     print('Post already alerted.')
-            print('Message Sent.')
+            print('Reddit Message Sent.')
 
     @tasks.loop(seconds=21600)
     async def watcher2(self, channel):
@@ -111,7 +114,7 @@ class MyClient(commands.Bot):
             user_id = config['USER_ID_2']
             message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
             await channel.send(message)
-            print('Message Sent.')
+            print('Fish Message Sent.')
 
 
 bot = MyClient(command_prefix='', intents=discord.Intents.all())
