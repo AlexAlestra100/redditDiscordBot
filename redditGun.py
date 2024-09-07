@@ -18,11 +18,12 @@ config = {
     "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
+    "URL_3": os.getenv('URL_3')
 }
 
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
-CURR_PRICE = 0.0
+CURR_PRICE = 349.99
 
 def scrape_reddit():
     url = config['URL']
@@ -82,6 +83,20 @@ def scrape_fish():
 
     return False
 
+# Custom scraper for the ebay
+def scrape_patch():
+    url = config['URL_3']
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Find the price
+    price_span = soup.find_all('span', class_='ux-textspans ux-textspans--BOLD ux-textspans--EMPHASIS')
+
+    if price_span and len(price_span) == 2 and price_span[1].text.strip() == 'Out of Stock':
+        return False
+
+    return True
+
 class MyClient(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,7 +106,8 @@ class MyClient(commands.Bot):
         channel = bot.get_channel(config['CHANNEL_ID'])
         await asyncio.gather(
             self.watcher1.start(channel),
-            self.watcher2.start(channel)
+            self.watcher2.start(channel),
+            self.watcher3.start(channel)
         )
 
     @tasks.loop(seconds=20)
@@ -115,6 +131,14 @@ class MyClient(commands.Bot):
             message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
             await channel.send(message)
             print('Fish Message Sent.')
+
+    @tasks.loop(seconds=21600)
+    async def watcher3(self, channel):
+        if scrape_patch():
+            user_id = config['USER_ID_2']
+            message = f"{user_id} \nPatch In Stock! \nLink: {config['URL_3']}"
+            await channel.send(message)
+            print('Patch Message Sent.')
 
 
 bot = MyClient(command_prefix='', intents=discord.Intents.all())
