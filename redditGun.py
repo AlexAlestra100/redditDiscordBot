@@ -84,7 +84,7 @@ def scrape_fish():
     return False
 
 # Custom scraper for the ebay
-def scrape_patch():
+def scrape_ebay():
     url = config['URL_3']
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -105,13 +105,13 @@ class MyClient(commands.Bot):
     async def on_ready(self):
         channel = bot.get_channel(config['CHANNEL_ID'])
         await asyncio.gather(
-            self.watcher1.start(channel),
-            self.watcher2.start(channel),
-            self.watcher3.start(channel)
+            self.reddit_watcher.start(channel),
+            self.fish_watcher.start(channel),
+            self.ebay_watcher.start(channel)
         )
 
     @tasks.loop(seconds=20)
-    async def watcher1(self, channel):
+    async def reddit_watcher(self, channel):
         posts = scrape_reddit()
         if posts:
             for post_data in posts:
@@ -125,7 +125,7 @@ class MyClient(commands.Bot):
             print('Reddit Message Sent.')
 
     @tasks.loop(seconds=21600)
-    async def watcher2(self, channel):
+    async def fish_watcher(self, channel):
         if scrape_fish():
             user_id = config['USER_ID_2']
             message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
@@ -133,8 +133,8 @@ class MyClient(commands.Bot):
             print('Fish Message Sent.')
 
     @tasks.loop(seconds=21600)
-    async def watcher3(self, channel):
-        if scrape_patch():
+    async def ebay_watcher(self, channel):
+        if scrape_ebay():
             user_id = config['USER_ID_2']
             message = f"{user_id} \nPatch In Stock! \nLink: {config['URL_3']}"
             await channel.send(message)
