@@ -150,7 +150,7 @@ async def utils(ctx, eBill: str):
 
     eachBill = iBillSplit + eBillSplit
 
-    ourBillHalf = round(eBillSplit * 2, 2) + iBillSplit
+    ourBillHalf = round(eBillSplit * 2, 2) - round(iBillSplit * 2, 2)
 
     await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Four Ways: {eachBill} \nOur Bill: {ourBillHalf}')
 
