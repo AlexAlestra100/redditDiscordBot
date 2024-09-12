@@ -32,7 +32,7 @@ def scrape_reddit():
     title_elements = soup.find_all('a', class_='block font-semibold text-neutral-content-strong m-0 visited:text-neutral-content-weak text-16 xs:text-18 mb-2xs xs:mb-xs')
 
     keywords = config['KEYWORDS']
-    otherKeywords = config['OTHER_KEYWORDS']
+    otherKeywords = config['OTHER_KEYWORDS'] + ['Modlite']
 
     titles = []
     base_url = "https://www.reddit.com"
@@ -140,6 +140,20 @@ class MyClient(commands.Bot):
             await channel.send(message)
             print('Patch Message Sent.')
 
+@commands.command()
+async def utils(ctx, eBill: str):
+    internetBill = 70
+    electricityBill = float(eBill)
 
-bot = MyClient(command_prefix='', intents=discord.Intents.all())
+    iBillSplit = round(internetBill / 4, 2)
+    eBillSplit = round(electricityBill / 4, 2)
+
+    eachBill = iBillSplit + eBillSplit
+
+    ourBillHalf = round(eBillSplit * 2, 2) + iBillSplit
+
+    await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Four Ways: {eachBill} \nOur Bill: {ourBillHalf}')
+
+bot = MyClient(command_prefix='/', intents=discord.Intents.all())
+bot.add_command(utils)
 bot.run(config['TOKEN'])
