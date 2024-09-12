@@ -32,7 +32,7 @@ def scrape_reddit():
     title_elements = soup.find_all('a', class_='block font-semibold text-neutral-content-strong m-0 visited:text-neutral-content-weak text-16 xs:text-18 mb-2xs xs:mb-xs')
 
     keywords = config['KEYWORDS']
-    otherKeywords = config['OTHER_KEYWORDS'] + ['Modlite']
+    otherKeywords = config['OTHER_KEYWORDS']
 
     titles = []
     base_url = "https://www.reddit.com"
