@@ -18,7 +18,8 @@ config = {
     "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
-    "URL_3": os.getenv('URL_3')
+    "URL_3": os.getenv('URL_3'),
+    "URL_4": os.getenv('URL_4')
 }
 
 CACHE = []
@@ -97,6 +98,19 @@ def scrape_ebay():
 
     return True
 
+# Custom scraper for the a barrel
+def scrape_barrel():
+    url = config['URL_4']
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    availability = [div.get('class', []) for div in soup.find_all('div', attrs={'title': 'Availability'})]
+
+    if availability[0][1] == 'available':
+        return True
+
+    return False
+
 class MyClient(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,7 +121,8 @@ class MyClient(commands.Bot):
         await asyncio.gather(
             self.reddit_watcher.start(channel),
             self.fish_watcher.start(channel),
-            self.ebay_watcher.start(channel)
+            self.ebay_watcher.start(channel),
+            self.barrel_watcher.start(channel)
         )
 
     @tasks.loop(seconds=20)
@@ -139,6 +154,14 @@ class MyClient(commands.Bot):
             message = f"{user_id} \nPatch In Stock! \nLink: {config['URL_3']}"
             await channel.send(message)
             print('Patch Message Sent.')
+    
+    @tasks.loop(seconds=20)
+    async def barrel_watcher(self, channel):
+        if scrape_barrel():
+            user_id = config['USER_ID']
+            message = f"{user_id} \nBarrel In Stock! \nLink: {config['URL_4']}"
+            await channel.send(message)
+            print('Barrel Message Sent.')
 
 @commands.command()
 async def utils(ctx, eBill: str):
