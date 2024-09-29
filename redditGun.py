@@ -23,7 +23,7 @@ config = {
 
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
-CURR_PRICE = 349.99
+CURR_PRICE = 329.99
 
 def scrape_reddit():
     url = config['URL']
