@@ -155,7 +155,7 @@ class MyClient(commands.Bot):
             await channel.send(message)
             print('Patch Message Sent.')
     
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=60)
     async def barrel_watcher(self, channel):
         if scrape_barrel():
             user_id = config['USER_ID']
