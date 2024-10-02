@@ -30,7 +30,7 @@ def scrape_reddit():
     url = config['URL']
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    title_elements = soup.find_all('a', class_='block font-semibold text-neutral-content-strong m-0 visited:text-neutral-content-weak text-16 xs:text-18 mb-2xs xs:mb-xs')
+    title_elements = soup.find_all('a', class_='block font-semibold text-neutral-content-strong m-0 visited:text-neutral-content-weak text-16 xs:text-18 mb-2xs xs:mb-xs overflow-hidden')
 
     keywords = config['KEYWORDS']
     otherKeywords = config['OTHER_KEYWORDS']
