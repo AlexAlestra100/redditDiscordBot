@@ -18,7 +18,6 @@ config = {
     "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
-    "URL_3": os.getenv('URL_3'),
     "URL_4": os.getenv('URL_4')
 }
 
@@ -121,7 +120,6 @@ class MyClient(commands.Bot):
         await asyncio.gather(
             self.reddit_watcher.start(channel),
             self.fish_watcher.start(channel),
-            self.ebay_watcher.start(channel),
             self.barrel_watcher.start(channel)
         )
 
