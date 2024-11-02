@@ -110,21 +110,15 @@ def scrape_barrel():
 
     return False
 
-class MyClient(commands.Bot):
+class AutoBots(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.msg_sent = False
-
-    async def on_ready(self):
-        channel = bot.get_channel(config['CHANNEL_ID'])
-        await asyncio.gather(
-            self.reddit_watcher.start(channel),
-            self.fish_watcher.start(channel),
-            self.barrel_watcher.start(channel)
-        )
+        self.reddit_watcher.start()
+        self.fish_watcher.start()
+        self.barrel_watcher.start()
 
     @tasks.loop(seconds=20)
-    async def reddit_watcher(self, channel):
+    async def reddit_watcher(channel):
         posts = scrape_reddit()
         if posts:
             for post_data in posts:
@@ -138,7 +132,7 @@ class MyClient(commands.Bot):
             print('Reddit Message Sent.')
 
     @tasks.loop(seconds=21600)
-    async def fish_watcher(self, channel):
+    async def fish_watcher(channel):
         if scrape_fish():
             user_id = config['USER_ID_2']
             message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
@@ -146,7 +140,7 @@ class MyClient(commands.Bot):
             print('Fish Message Sent.')
 
     @tasks.loop(seconds=21600)
-    async def ebay_watcher(self, channel):
+    async def ebay_watcher(channel):
         if scrape_ebay():
             user_id = config['USER_ID_2']
             message = f"{user_id} \nPatch In Stock! \nLink: {config['URL_3']}"
@@ -154,17 +148,29 @@ class MyClient(commands.Bot):
             print('Patch Message Sent.')
     
     @tasks.loop(seconds=60)
-    async def barrel_watcher(self, channel):
+    async def barrel_watcher(channel):
         if scrape_barrel():
             user_id = config['USER_ID']
             message = f"{user_id} \nBarrel In Stock! \nLink: {config['URL_4']}"
             await channel.send(message)
             print('Barrel Message Sent.')
 
-@commands.command()
-async def utils(ctx, eBill: str):
+bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
+
+@bot.event
+async def on_ready():
+        channel = bot.get_channel(config['CHANNEL_ID'])
+        await bot.tree.sync()
+        await asyncio.gather(
+            AutoBots.reddit_watcher.start(channel),
+            AutoBots.fish_watcher.start(channel),
+            AutoBots.barrel_watcher.start(channel)
+        )
+
+@bot.hybrid_command(name='utils')
+async def utils(ctx: commands.Context, ebill: str):
     internetBill = 70
-    electricityBill = float(eBill)
+    electricityBill = float(ebill)
 
     iBillSplit = round(internetBill / 4, 2)
     eBillSplit = round(electricityBill / 4, 2)
@@ -175,6 +181,4 @@ async def utils(ctx, eBill: str):
 
     await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Four Ways: {eachBill} \nOur Bill: {ourBillHalf}')
 
-bot = MyClient(command_prefix='/', intents=discord.Intents.all())
-bot.add_command(utils)
 bot.run(config['TOKEN'])
