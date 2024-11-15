@@ -23,7 +23,7 @@ config = {
 
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
-CURR_PRICE = 329.99
+CURR_PRICE = 199.99
 
 def scrape_reddit():
     url = config['URL']
@@ -64,24 +64,34 @@ def add_post_to_cache(post):
     CACHE.append((time.time(), post))
 
 # Custom scraper for the fish store
-def scrape_fish():
+def scrape_midway_barrel():
     url = config['URL_2']
+    print(url)
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Find the price
-    price_span = soup.find('span', class_='price-item price-item--regular')
+    # save soup to an html file
+    # Having issues because site is being denied
+    with open('midway.html', 'w') as file:
+        file.write(str(soup))
 
-    if price_span:
-        price_text = price_span.text.strip()
-        if price_text:
-            global CURR_PRICE
-            price = float(price_text[1:])
-            if CURR_PRICE != price:
-                CURR_PRICE = price
-                return True
+    # find this <div class="priceblock price-container stack-s"><span class="sr-only">Our price $199.99</span><div class="margin-bottom-xs flex active-price" aria-hidden="true"><span class="price-description inline-block text-s text-grey-700 margin-top-s text-right inline-xs align-self-start">Our Price:</span><div class="text-l text-bold"><span class="inline-xs inline-block text-red-dark"><sup class="dollar-sign">$</sup>199.99</span></div></div></div>
+    price_div = soup.find('div', class_='priceblock price-container stack-s')
+
+    print(price_div)
 
     return False
+
+    # if price_div:
+    #     price_text = price_div.text.strip()
+    #     if price_text:
+    #         global CURR_PRICE
+    #         price = float(price_text[1:])
+    #         if CURR_PRICE != price:
+    #             CURR_PRICE = price
+    #             return True
+
+    # return False
 
 # Custom scraper for the ebay
 def scrape_ebay():
@@ -131,13 +141,14 @@ class AutoBots(commands.Bot):
                     print('Post already alerted.')
             print('Reddit Message Sent.')
 
-    @tasks.loop(seconds=21600)
-    async def fish_watcher(channel):
-        if scrape_fish():
-            user_id = config['USER_ID_2']
+    # @tasks.loop(seconds=86400)
+    @tasks.loop(seconds=5)
+    async def midway_barrel_watcher(channel):
+        if scrape_midway_barrel():
+            user_id = config['USER_ID_1']
             message = f"{user_id} \nPrice: {CURR_PRICE} \nLink: {config['URL_2']}"
             await channel.send(message)
-            print('Fish Message Sent.')
+            print('Midway Barrel Message Sent.')
 
     @tasks.loop(seconds=21600)
     async def ebay_watcher(channel):
@@ -163,7 +174,7 @@ async def on_ready():
         await bot.tree.sync()
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
-            AutoBots.fish_watcher.start(channel),
+            # AutoBots.midway_barrel_watcher.start(channel),
             AutoBots.barrel_watcher.start(channel)
         )
 
