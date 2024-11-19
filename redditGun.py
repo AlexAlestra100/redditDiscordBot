@@ -185,8 +185,7 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('Barrel Message Sent.')
 
-    # @tasks.loop(seconds=86400)
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=86400)
     async def midway_barrel_watcher(channel):
         if scrape_midway_barrel():
             user_id = config['USER_ID']
