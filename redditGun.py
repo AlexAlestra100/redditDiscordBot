@@ -94,20 +94,6 @@ def scrape_fish():
 
     return False
 
-# Custom scraper for the ebay
-def scrape_ebay():
-    url = config['URL_3']
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    # Find the price
-    price_span = soup.find_all('span', class_='ux-textspans ux-textspans--BOLD ux-textspans--EMPHASIS')
-
-    if price_span and len(price_span) == 2 and price_span[1].text.strip() == 'Out of Stock':
-        return False
-
-    return True
-
 # Custom scraper for the a barrel
 def scrape_barrel():
     url = config['URL_4']
@@ -145,7 +131,7 @@ class AutoBots(commands.Bot):
         self.reddit_watcher.start()
         self.fish_watcher.start()
         self.barrel_watcher.start()
-        self.midway_barrel_watcher.start()
+        # self.midway_barrel_watcher.start()
 
     @tasks.loop(seconds=20)
     async def reddit_watcher(channel):
@@ -168,14 +154,6 @@ class AutoBots(commands.Bot):
             message = f"{user_id} \nPrice: {FISH_CURR_PRICE} \nLink: {config['URL_2']}"
             await channel.send(message)
             print('Fish Message Sent.')
-
-    @tasks.loop(seconds=21600)
-    async def ebay_watcher(channel):
-        if scrape_ebay():
-            user_id = config['USER_ID_2']
-            message = f"{user_id} \nPatch In Stock! \nLink: {config['URL_3']}"
-            await channel.send(message)
-            print('Patch Message Sent.')
     
     @tasks.loop(seconds=60)
     async def barrel_watcher(channel):
@@ -185,13 +163,13 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('Barrel Message Sent.')
 
-    @tasks.loop(seconds=7200)
-    async def midway_barrel_watcher(channel):
-        if scrape_midway_barrel():
-            user_id = config['USER_ID']
-            message = f"{user_id} \nPrice: {MIDWAY_CURR_PRICE} \nLink: {config['URL_5']}"
-            await channel.send(message)
-            print('Midway Barrel Message Sent.')
+    # @tasks.loop(seconds=7200)
+    # async def midway_barrel_watcher(channel):
+    #     if scrape_midway_barrel():
+    #         user_id = config['USER_ID']
+    #         message = f"{user_id} \nPrice: {MIDWAY_CURR_PRICE} \nLink: {config['URL_5']}"
+    #         await channel.send(message)
+    #         print('Midway Barrel Message Sent.')
 
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
@@ -203,7 +181,7 @@ async def on_ready():
             AutoBots.reddit_watcher.start(channel),
             AutoBots.fish_watcher.start(channel),
             AutoBots.barrel_watcher.start(channel),
-            AutoBots.midway_barrel_watcher.start(channel),
+            # AutoBots.midway_barrel_watcher.start(channel),
         )
 
 @bot.hybrid_command(name='utils')
