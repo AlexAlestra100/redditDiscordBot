@@ -21,7 +21,8 @@ config = {
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
     "URL_4": os.getenv('URL_4'),
-    "URL_5": os.getenv('URL_5')
+    "URL_5": os.getenv('URL_5'),
+    "URL_6": os.getenv('URL_6'),
 }
 
 headers = {
@@ -35,6 +36,8 @@ CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 329.99
 MIDWAY_CURR_PRICE = 199.99
+MEDAL_OF_HONOR_CURR_PRICE = 19.99
+MEDAL_OF_HONOR_DELUXE_CURR_PRICE = 24.99
 
 def scrape_reddit():
     url = config['URL']
@@ -125,6 +128,43 @@ def scrape_midway_barrel():
 
     return False
 
+def scrape_medal_of_honor():
+    print('Scraping Medal of Honor')
+
+    backend_url = 'https://service-aggregation-layer.juno.ea.com/graphql'
+    params = {
+        'operationName': 'gameProductsOffers',
+        'variables': json.dumps({
+            "locale": "en",
+            "overrideCountryCode": "US",
+            "offerIds": ["OFB-EAST:46113", "OFB-EAST:50884"],
+            "platforms": "PC",
+            "subscriptionLevel": "NON_SUBSCRIBER"
+        }),
+        'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"60ada320beb2e4af93932967aee50286101fdbd3b4cbb1bf1d231c7d241d6941"}}'
+    }
+
+    # Send the backend request to fetch the price
+    response = requests.get(backend_url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        # Extract the displayTotalWithDiscount value
+        display_total_with_discount = response.json()['data']['gameProducts']['items'][0]['anonymousOffer']['lowestPricePurchaseOption']['displayTotalWithDiscount']
+        display_total_with_discount_deluxe = response.json()['data']['gameProducts']['items'][1]['anonymousOffer']['lowestPricePurchaseOption']['displayTotalWithDiscount']
+
+        # Remove the $ sign and convert to float
+        display_total_with_discount = float(display_total_with_discount.replace('$', ''))
+        display_total_with_discount_deluxe = float(display_total_with_discount_deluxe.replace('$', ''))
+
+        if display_total_with_discount != MEDAL_OF_HONOR_CURR_PRICE or display_total_with_discount_deluxe != MEDAL_OF_HONOR_DELUXE_CURR_PRICE:
+            global MEDAL_OF_HONOR_CURR_PRICE
+            global MEDAL_OF_HONOR_DELUXE_CURR_PRICE
+            MEDAL_OF_HONOR_CURR_PRICE = display_total_with_discount
+            MEDAL_OF_HONOR_DELUXE_CURR_PRICE = display_total_with_discount_deluxe
+            return True
+    
+    return False
+
 class AutoBots(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -132,6 +172,7 @@ class AutoBots(commands.Bot):
         self.fish_watcher.start()
         self.barrel_watcher.start()
         # self.midway_barrel_watcher.start()
+        self.medal_of_honor_watcher.start()
 
     @tasks.loop(seconds=20)
     async def reddit_watcher(channel):
@@ -171,6 +212,14 @@ class AutoBots(commands.Bot):
     #         await channel.send(message)
     #         print('Midway Barrel Message Sent.')
 
+    @tasks.loop(seconds=86400)
+    async def medal_of_honor_watcher(channel):
+        if scrape_medal_of_honor():
+            user_id = config['USER_ID']
+            message = f"{user_id} \nMedal of Honor Price: {MEDAL_OF_HONOR_CURR_PRICE} \n Medal of Honor Deluxe: {MEDAL_OF_HONOR_DELUXE_CURR_PRICE} \nLink: {config['URL_6']}"
+            await channel.send(message)
+            print('Medal of Honor Message Sent.')
+
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
 @bot.event
@@ -182,6 +231,7 @@ async def on_ready():
             AutoBots.fish_watcher.start(channel),
             AutoBots.barrel_watcher.start(channel),
             # AutoBots.midway_barrel_watcher.start(channel),
+            AutoBots.medal_of_honor_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
