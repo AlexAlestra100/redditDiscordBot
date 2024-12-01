@@ -23,6 +23,9 @@ config = {
     "URL_4": os.getenv('URL_4'),
     "URL_5": os.getenv('URL_5'),
     "URL_6": os.getenv('URL_6'),
+    "URL_7": os.getenv('URL_7'),
+    "URL_7_PARAMS_VARIABLES": json.loads(os.getenv('URL_7_PARAMS_VARIABLES')),
+    "URL_7_PARAMS_EXTENSIONS": json.loads(os.getenv('URL_7_PARAMS_EXTENSIONS')),
 }
 
 headers = {
@@ -131,18 +134,25 @@ def scrape_midway_barrel():
 def scrape_medal_of_honor():
     print('Scraping Medal of Honor')
 
-    backend_url = 'https://service-aggregation-layer.juno.ea.com/graphql'
+    backend_url = config['URL_7']
     params = {
         'operationName': 'gameProductsOffers',
-        'variables': json.dumps({
-            "locale": "en",
-            "overrideCountryCode": "US",
-            "offerIds": ["OFB-EAST:46113", "OFB-EAST:50884"],
-            "platforms": "PC",
-            "subscriptionLevel": "NON_SUBSCRIBER"
-        }),
-        'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"60ada320beb2e4af93932967aee50286101fdbd3b4cbb1bf1d231c7d241d6941"}}'
+        'variables': json.dumps(config['URL_7_PARAMS_VARIABLES']),
+        'extensions': json.dumps(config['URL_7_PARAMS_EXTENSIONS'])
     }
+
+    # backend_url = 'https://service-aggregation-layer.juno.ea.com/graphql'
+    # params = {
+    #     'operationName': 'gameProductsOffers',
+    #     'variables': json.dumps({
+    #         "locale": "en",
+    #         "overrideCountryCode": "US",
+    #         "offerIds": ["OFB-EAST:46113", "OFB-EAST:50884"],
+    #         "platforms": "PC",
+    #         "subscriptionLevel": "NON_SUBSCRIBER"
+    #     }),
+    #     'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"60ada320beb2e4af93932967aee50286101fdbd3b4cbb1bf1d231c7d241d6941"}}'
+    # }
 
     # Send the backend request to fetch the price
     response = requests.get(backend_url, headers=headers, params=params)
@@ -156,9 +166,10 @@ def scrape_medal_of_honor():
         display_total_with_discount = float(display_total_with_discount.replace('$', ''))
         display_total_with_discount_deluxe = float(display_total_with_discount_deluxe.replace('$', ''))
 
+        global MEDAL_OF_HONOR_CURR_PRICE
+        global MEDAL_OF_HONOR_DELUXE_CURR_PRICE
+
         if display_total_with_discount != MEDAL_OF_HONOR_CURR_PRICE or display_total_with_discount_deluxe != MEDAL_OF_HONOR_DELUXE_CURR_PRICE:
-            global MEDAL_OF_HONOR_CURR_PRICE
-            global MEDAL_OF_HONOR_DELUXE_CURR_PRICE
             MEDAL_OF_HONOR_CURR_PRICE = display_total_with_discount
             MEDAL_OF_HONOR_DELUXE_CURR_PRICE = display_total_with_discount_deluxe
             return True
