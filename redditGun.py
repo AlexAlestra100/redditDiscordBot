@@ -141,19 +141,6 @@ def scrape_medal_of_honor():
         'extensions': json.dumps(config['URL_7_PARAMS_EXTENSIONS'])
     }
 
-    # backend_url = 'https://service-aggregation-layer.juno.ea.com/graphql'
-    # params = {
-    #     'operationName': 'gameProductsOffers',
-    #     'variables': json.dumps({
-    #         "locale": "en",
-    #         "overrideCountryCode": "US",
-    #         "offerIds": ["OFB-EAST:46113", "OFB-EAST:50884"],
-    #         "platforms": "PC",
-    #         "subscriptionLevel": "NON_SUBSCRIBER"
-    #     }),
-    #     'extensions': '{"persistedQuery":{"version":1,"sha256Hash":"60ada320beb2e4af93932967aee50286101fdbd3b4cbb1bf1d231c7d241d6941"}}'
-    # }
-
     # Send the backend request to fetch the price
     response = requests.get(backend_url, headers=headers, params=params)
 
