@@ -20,7 +20,6 @@ config = {
     "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
-    "URL_4": os.getenv('URL_4'),
     "URL_5": os.getenv('URL_5'),
     "URL_6": os.getenv('URL_6'),
     "URL_7": os.getenv('URL_7'),
@@ -100,21 +99,8 @@ def scrape_fish():
 
     return False
 
-# Custom scraper for the a barrel
-def scrape_barrel():
-    url = config['URL_4']
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    availability = [div.get('class', []) for div in soup.find_all('div', attrs={'title': 'Availability'})]
-
-    if availability[0][1] == 'available':
-        return True
-
-    return False
-
-def scrape_midway_barrel():
-    print('Scraping Midway Barrel')
+def scrape_midway():
+    print('Scraping Midway')
     url = config['URL_5']
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -168,8 +154,7 @@ class AutoBots(commands.Bot):
         super().__init__(*args, **kwargs)
         self.reddit_watcher.start()
         self.fish_watcher.start()
-        self.barrel_watcher.start()
-        # self.midway_barrel_watcher.start()
+        # self.midway_watcher.start()
         self.medal_of_honor_watcher.start()
 
     @tasks.loop(seconds=20)
@@ -193,18 +178,10 @@ class AutoBots(commands.Bot):
             message = f"{user_id} \nPrice: {FISH_CURR_PRICE} \nLink: {config['URL_2']}"
             await channel.send(message)
             print('Fish Message Sent.')
-    
-    @tasks.loop(seconds=60)
-    async def barrel_watcher(channel):
-        if scrape_barrel():
-            user_id = config['USER_ID']
-            message = f"{user_id} \nBarrel In Stock! \nLink: {config['URL_4']}"
-            await channel.send(message)
-            print('Barrel Message Sent.')
 
     # @tasks.loop(seconds=7200)
-    # async def midway_barrel_watcher(channel):
-    #     if scrape_midway_barrel():
+    # async def midway_watcher(channel):
+    #     if scrape_midway():
     #         user_id = config['USER_ID']
     #         message = f"{user_id} \nPrice: {MIDWAY_CURR_PRICE} \nLink: {config['URL_5']}"
     #         await channel.send(message)
@@ -227,7 +204,6 @@ async def on_ready():
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
             AutoBots.fish_watcher.start(channel),
-            AutoBots.barrel_watcher.start(channel),
             # AutoBots.midway_barrel_watcher.start(channel),
             AutoBots.medal_of_honor_watcher.start(channel)
         )
