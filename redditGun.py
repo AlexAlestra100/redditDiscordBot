@@ -1,4 +1,5 @@
 import os
+import subprocess
 import time
 import requests
 import asyncio
@@ -37,7 +38,6 @@ headers = {
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 329.99
-LEVER_CURR_PRICE = 1029.99
 MEDAL_OF_HONOR_CURR_PRICE = 19.99
 MEDAL_OF_HONOR_DELUXE_CURR_PRICE = 24.99
 
@@ -99,26 +99,32 @@ def scrape_fish():
 
     return False
 
-# def scrape_lever():
-#     print('Scraping Lever')
-#     url = config['URL_5']
-#     response = requests.get(url, headers=headers)
-#     soup = BeautifulSoup(response.text, 'html.parser')
+def scrape_patch():
+    print('Scraping Lever')
+    url = config['URL_5']
+    file_name = 'patch.html'
 
-#     p_Availablility = soup.find('p', id='_available_stock')
-#     span_Price = soup.find('span', id='sale_price')
+    curl_command = [
+        'curl', '-o', file_name, url
+    ]
 
-#     if p_Availablility and span_Price:
-#         availability_text = p_Availablility.get_text(strip=True)
-#         if availability_text != 'Out of Stock':
-#             global LEVER_CURR_PRICE
-#             price_text = span_Price.get_text(strip=True)
-#             price = float(price_text.replace('$', '').replace(',', ''))
-#             if LEVER_CURR_PRICE != price:
-#                 LEVER_CURR_PRICE = price
-#                 return True
+    subprocess.run(curl_command)
 
-#     return False
+    # Read the HTML file with BeautifulSoup
+    with open(file_name, 'r') as file:
+        soup = BeautifulSoup(file, 'html.parser')
+
+    os.remove(file_name)
+
+    button = soup.find('button', id='ProductSubmitButton-template--23839774408987__main')
+   
+    if button:
+        span = button.find('span')
+        if span:
+            span_text = span.text.strip()
+            return span_text != "Sold out"
+
+    return False
 
 def scrape_medal_of_honor():
     print('Scraping Medal of Honor')
@@ -157,7 +163,7 @@ class AutoBots(commands.Bot):
         super().__init__(*args, **kwargs)
         self.reddit_watcher.start()
         self.fish_watcher.start()
-        # self.lever_watcher.start()
+        self.patch_watcher.start()
         self.medal_of_honor_watcher.start()
 
     @tasks.loop(seconds=20)
@@ -182,13 +188,13 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('Fish Message Sent.')
 
-    # @tasks.loop(seconds=86400)
-    # async def lever_watcher(channel):
-    #     if scrape_lever():
-    #         user_id = config['USER_ID']
-    #         message = f"{user_id} \nPrice: {LEVER_CURR_PRICE} \nLink: {config['URL_5']}"
-    #         await channel.send(message)
-    #         print('Lever Message Sent.')
+    @tasks.loop(seconds=86400)
+    async def patch_watcher(channel):
+        if scrape_patch():
+            user_id = config['USER_ID']
+            message = f"{user_id} \nPatch in stock! \nLink: {config['URL_5']}"
+            await channel.send(message)
+            print('Lever Message Sent.')
 
     @tasks.loop(seconds=86400)
     async def medal_of_honor_watcher(channel):
@@ -207,7 +213,7 @@ async def on_ready():
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
             AutoBots.fish_watcher.start(channel),
-            # AutoBots.lever_watcher.start(channel),
+            AutoBots.patch_watcher.start(channel),
             AutoBots.medal_of_honor_watcher.start(channel)
         )
 
