@@ -164,7 +164,7 @@ class AutoBots(commands.Bot):
         self.reddit_watcher.start()
         self.fish_watcher.start()
         self.patch_watcher.start()
-        self.medal_of_honor_watcher.start()
+        # self.medal_of_honor_watcher.start()
 
     @tasks.loop(seconds=20)
     async def reddit_watcher(channel):
@@ -214,7 +214,7 @@ async def on_ready():
             AutoBots.reddit_watcher.start(channel),
             AutoBots.fish_watcher.start(channel),
             AutoBots.patch_watcher.start(channel),
-            AutoBots.medal_of_honor_watcher.start(channel)
+            # AutoBots.medal_of_honor_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
