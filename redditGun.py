@@ -9,6 +9,7 @@ import json
 from bs4 import BeautifulSoup
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
+from icecream import ic
 
 load_dotenv()
 
@@ -22,10 +23,6 @@ config = {
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
     "URL_5": os.getenv('URL_5'),
-    "URL_6": os.getenv('URL_6'),
-    "URL_7": os.getenv('URL_7'),
-    "URL_7_PARAMS_VARIABLES": json.loads(os.getenv('URL_7_PARAMS_VARIABLES')),
-    "URL_7_PARAMS_EXTENSIONS": json.loads(os.getenv('URL_7_PARAMS_EXTENSIONS')),
 }
 
 headers = {
@@ -38,8 +35,6 @@ headers = {
 CACHE = []
 CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 279.99
-MEDAL_OF_HONOR_CURR_PRICE = 19.99
-MEDAL_OF_HONOR_DELUXE_CURR_PRICE = 24.99
 
 def scrape_reddit():
     url = config['URL']
@@ -100,7 +95,7 @@ def scrape_fish():
     return False
 
 def scrape_patch():
-    print('Scraping Lever')
+    print('Scraping Patch')
     url = config['URL_5']
     file_name = 'patch.html'
 
@@ -126,45 +121,35 @@ def scrape_patch():
 
     return False
 
-def scrape_medal_of_honor():
-    print('Scraping Medal of Honor')
+def scrape_gpu():
+    urls = [
+        'https://www.zotacstore.com/us/zotac-gaming-geforce-rtx2080ti-11gb-gddr6-refurbished',
+        'https://www.zotacstore.com/us/zotac-gaming-geforce-rex2080ti-11gb-gddr6-refurbished',
+        'https://www.zotacstore.com/us/zotac-gaming-geforce-rtx2080ti-11gb-gddr6-352-bit-refurbished'
+    ]
 
-    backend_url = config['URL_7']
-    params = {
-        'operationName': 'gameProductsOffers',
-        'variables': json.dumps(config['URL_7_PARAMS_VARIABLES']),
-        'extensions': json.dumps(config['URL_7_PARAMS_EXTENSIONS'])
-    }
+    data = []
 
-    # Send the backend request to fetch the price
-    response = requests.get(backend_url, headers=headers, params=params)
+    for url in urls:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    if response.status_code == 200:
-        # Extract the displayTotalWithDiscount value
-        display_total_with_discount = response.json()['data']['gameProducts']['items'][0]['anonymousOffer']['lowestPricePurchaseOption']['displayTotalWithDiscount']
-        display_total_with_discount_deluxe = response.json()['data']['gameProducts']['items'][1]['anonymousOffer']['lowestPricePurchaseOption']['displayTotalWithDiscount']
+        product_info = soup.find('div', class_='product-info-stock-sku')
+        if product_info:
+            stock_status = product_info.find('div', class_='stock available')
+            if stock_status:
+                data.append(url)
 
-        # Remove the $ sign and convert to float
-        display_total_with_discount = float(display_total_with_discount.replace('$', ''))
-        display_total_with_discount_deluxe = float(display_total_with_discount_deluxe.replace('$', ''))
+    return data
 
-        global MEDAL_OF_HONOR_CURR_PRICE
-        global MEDAL_OF_HONOR_DELUXE_CURR_PRICE
-
-        if display_total_with_discount != MEDAL_OF_HONOR_CURR_PRICE or display_total_with_discount_deluxe != MEDAL_OF_HONOR_DELUXE_CURR_PRICE:
-            MEDAL_OF_HONOR_CURR_PRICE = display_total_with_discount
-            MEDAL_OF_HONOR_DELUXE_CURR_PRICE = display_total_with_discount_deluxe
-            return True
-    
-    return False
 
 class AutoBots(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reddit_watcher.start()
         self.fish_watcher.start()
-        self.patch_watcher.start()
-        # self.medal_of_honor_watcher.start()
+        # self.patch_watcher.start()
+        self.gpu_watcher.start()
 
     @tasks.loop(seconds=20)
     async def reddit_watcher(channel):
@@ -194,15 +179,16 @@ class AutoBots(commands.Bot):
             user_id = config['USER_ID']
             message = f"{user_id} \nPatch in stock! \nLink: {config['URL_5']}"
             await channel.send(message)
-            print('Lever Message Sent.')
+            print('Patch Message Sent.')
 
-    @tasks.loop(seconds=86400)
-    async def medal_of_honor_watcher(channel):
-        if scrape_medal_of_honor():
+    @tasks.loop(seconds=3600)
+    async def gpu_watcher(channel):
+        gpuData = scrape_gpu()
+        if len(gpuData) > 0:
             user_id = config['USER_ID']
-            message = f"{user_id} \nMedal of Honor Price: {MEDAL_OF_HONOR_CURR_PRICE} \n Medal of Honor Deluxe: {MEDAL_OF_HONOR_DELUXE_CURR_PRICE} \nLink: {config['URL_6']}"
+            message = f"{user_id} \nZotac GPU Available \nLink: {gpuData}"
             await channel.send(message)
-            print('Medal of Honor Message Sent.')
+            print('GPU Message Sent.')
 
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
@@ -213,8 +199,8 @@ async def on_ready():
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
             AutoBots.fish_watcher.start(channel),
-            AutoBots.patch_watcher.start(channel),
-            # AutoBots.medal_of_honor_watcher.start(channel)
+            # AutoBots.patch_watcher.start(channel),
+            AutoBots.gpu_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
