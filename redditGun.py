@@ -205,7 +205,7 @@ async def on_ready():
 
 @bot.hybrid_command(name='utils')
 async def utils(ctx: commands.Context, ebill: str):
-    internetBill = 70
+    internetBill = 60
     electricityBill = float(ebill)
 
     iBillSplit = round(internetBill / 4, 2)
