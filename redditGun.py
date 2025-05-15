@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import time
 import requests
@@ -22,6 +23,8 @@ config = {
     "OTHER_KEYWORDS": os.getenv('OTHER_KEYWORDS').split(','),
     "USER_ID_2": os.getenv('USER_ID_2'),
     "URL_2": os.getenv('URL_2'),
+    "URL_3": os.getenv('URL_3'),
+    "NEW_OTHER_KEYWORDS": os.getenv('NEW_OTHER_KEYWORDS').split(','),
     "URL_5": os.getenv('URL_5'),
 }
 
@@ -40,7 +43,7 @@ def scrape_reddit():
     url = config['URL']
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    title_elements = soup.find_all('a', class_='block font-semibold text-neutral-content-strong m-0 visited:text-neutral-content-weak text-16 xs:text-18 mb-2xs xs:mb-xs overflow-hidden')
+    title_elements = soup.find_all('a', class_='block text-neutral-content-strong m-0 visited:text-neutral-content-weak font-semibold text-16 xs:text-18 mb-2xs xs:mb-xs overflow-hidden')
 
     keywords = config['KEYWORDS']
     otherKeywords = config['OTHER_KEYWORDS']
@@ -56,6 +59,33 @@ def scrape_reddit():
                     if not href.startswith(base_url):
                         href = base_url + href
                     titles.append({'title': title, 'link': href})
+    return titles
+
+def scrape_reddit2():
+    url = config['URL_3']
+    response = requests.get(url)
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Find all title elements
+    title_elements = soup.find_all('a', class_='block text-neutral-content-strong m-0 visited:text-neutral-content-weak font-semibold text-16 xs:text-18 mb-2xs xs:mb-xs overflow-hidden')
+    newOtherKeywords = config['NEW_OTHER_KEYWORDS']
+
+    titles = []
+    base_url = "https://www.reddit.com"
+    for title_element in title_elements:
+        #grab the title text and shorten it from [H] to [W]
+        if title_element.has_attr('slot') and title_element['slot'] == 'title':
+            title = title_element.text
+            match = re.search(r'\[H\](.*?)\[W\]', title, re.IGNORECASE | re.DOTALL)
+            if match:
+                between_hw = match.group(1).strip()
+                if any(otherKeyword.lower() in between_hw.lower() for otherKeyword in newOtherKeywords):
+                    href = title_element.get('href')
+                    if not href.startswith(base_url):
+                        href = base_url + href
+                    titles.append({'title': title, 'link': href})
+
     return titles
 
 def is_post_alerted(post):
@@ -95,7 +125,6 @@ def scrape_fish():
     return False
 
 def scrape_patch():
-    print('Scraping Patch')
     url = config['URL_5']
     file_name = 'patch.html'
 
@@ -112,7 +141,7 @@ def scrape_patch():
     os.remove(file_name)
 
     button = soup.find('button', id='ProductSubmitButton-template--23839774408987__main')
-   
+
     if button:
         span = button.find('span')
         if span:
@@ -147,8 +176,9 @@ class AutoBots(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.reddit_watcher.start()
+        self.reddit_watcher2.start()
         self.fish_watcher.start()
-        # self.patch_watcher.start()
+        self.patch_watcher.start()
         self.gpu_watcher.start()
 
     @tasks.loop(seconds=20)
@@ -164,6 +194,20 @@ class AutoBots(commands.Bot):
                 else:
                     print('Post already alerted.')
             print('Reddit Message Sent.')
+        
+    @tasks.loop(seconds=20)
+    async def reddit_watcher2(channel):
+        posts = scrape_reddit2()
+        if posts:
+            for post_data in posts:
+                if not is_post_alerted(post_data):
+                    user_id = config['USER_ID']
+                    message = f"{user_id} \nTitle: {post_data['title']} \nLink: {post_data['link']}"
+                    await channel.send(message)
+                    add_post_to_cache(post_data)
+                else:
+                    print('Post already alerted.')
+            print('Second Reddit Message Sent.')
 
     @tasks.loop(seconds=21600)
     async def fish_watcher(channel):
@@ -198,8 +242,9 @@ async def on_ready():
         await bot.tree.sync()
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
+            AutoBots.reddit_watcher2.start(channel),
             AutoBots.fish_watcher.start(channel),
-            # AutoBots.patch_watcher.start(channel),
+            AutoBots.patch_watcher.start(channel),
             AutoBots.gpu_watcher.start(channel)
         )
 
