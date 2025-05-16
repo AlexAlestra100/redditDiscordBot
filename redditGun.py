@@ -36,7 +36,7 @@ headers = {
 }
 
 CACHE = []
-CACHE_EXPIRY = 15 * 60  # 15 minutes in seconds
+CACHE_EXPIRY = 30 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 279.99
 
 def scrape_reddit():
