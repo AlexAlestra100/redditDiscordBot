@@ -28,6 +28,8 @@ config = {
     "URL_5": os.getenv('URL_5'),
 }
 
+ic(config)
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Accept-Language": "en-US,en;q=0.9",
@@ -36,7 +38,7 @@ headers = {
 }
 
 CACHE = []
-CACHE_EXPIRY = 30 * 60  # 15 minutes in seconds
+CACHE_EXPIRY = 120 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 279.99
 
 def scrape_reddit():
