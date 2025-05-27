@@ -175,14 +175,6 @@ def scrape_gpu():
 
 
 class AutoBots(commands.Bot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.reddit_watcher.start()
-        self.reddit_watcher2.start()
-        self.fish_watcher.start()
-        self.patch_watcher.start()
-        self.gpu_watcher.start()
-
     @tasks.loop(seconds=20)
     async def reddit_watcher(channel):
         posts = scrape_reddit()
@@ -244,7 +236,7 @@ async def on_ready():
         await bot.tree.sync()
         await asyncio.gather(
             AutoBots.reddit_watcher.start(channel),
-            AutoBots.reddit_watcher2.start(channel),
+            # AutoBots.reddit_watcher2.start(channel),
             AutoBots.fish_watcher.start(channel),
             AutoBots.patch_watcher.start(channel),
             AutoBots.gpu_watcher.start(channel)
