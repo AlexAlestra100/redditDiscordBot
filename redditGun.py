@@ -26,6 +26,7 @@ config = {
     "URL_3": os.getenv('URL_3'),
     "NEW_OTHER_KEYWORDS": os.getenv('NEW_OTHER_KEYWORDS').split(','),
     "URL_5": os.getenv('URL_5'),
+    "IP": os.getenv('IP'),
 }
 
 ic(config)
@@ -40,6 +41,7 @@ headers = {
 CACHE = []
 CACHE_EXPIRY = 120 * 60  # 15 minutes in seconds
 FISH_CURR_PRICE = 279.99
+CURR_IP = config['IP']
 
 def scrape_reddit():
     url = config['URL']
@@ -173,6 +175,18 @@ def scrape_gpu():
 
     return data
 
+def scrape_ip():
+    ic('Scraping IP...')
+    global CURR_IP
+
+    response = requests.get('https://api.ipify.org?format=json')
+    if response.status_code == 200:
+        if response.json()['ip'] != CURR_IP:
+            CURR_IP = response.json()['ip']
+            return True
+
+    return False
+
 
 class AutoBots(commands.Bot):
     @tasks.loop(seconds=20)
@@ -228,6 +242,14 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('GPU Message Sent.')
 
+    @tasks.loop(seconds=86400)
+    async def ip_watcher(channel):
+        if scrape_ip():
+            user_id = config['USER_ID']
+            message = f"{user_id} \nNew IP: {CURR_IP}"
+            await channel.send(message)
+            print('IP Update Message Sent.')
+
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
 @bot.event
@@ -239,7 +261,8 @@ async def on_ready():
             # AutoBots.reddit_watcher2.start(channel),
             AutoBots.fish_watcher.start(channel),
             AutoBots.patch_watcher.start(channel),
-            AutoBots.gpu_watcher.start(channel)
+            AutoBots.gpu_watcher.start(channel),
+            AutoBots.ip_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
