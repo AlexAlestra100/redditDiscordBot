@@ -281,9 +281,11 @@ async def utils(ctx: commands.Context, ebill: str):
 
 @bot.hybrid_command(name='ip')
 async def ip(ctx: commands.Context):
-    if CURR_IP:
-        await ctx.send(f'Current IP: {CURR_IP}')
+    response = requests.get('https://api.ipify.org?format=json')
+    if response.status_code == 200:
+        ip_data = response.json()
+        await ctx.send(f"Current IP: {ip_data['ip']}")
     else:
-        await ctx.send('IP not available.')
+        await ctx.send('Failed to retrieve IP address.')
 
 bot.run(config['TOKEN'])
