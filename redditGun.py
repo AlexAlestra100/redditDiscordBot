@@ -279,4 +279,11 @@ async def utils(ctx: commands.Context, ebill: str):
 
     await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Four Ways: {eachBill} \nOur Bill: {ourBillHalf}')
 
+@bot.hybrid_command(name='ip')
+async def ip(ctx: commands.Context):
+    if CURR_IP:
+        await ctx.send(f'Current IP: {CURR_IP}')
+    else:
+        await ctx.send('IP not available.')
+
 bot.run(config['TOKEN'])
