@@ -27,6 +27,7 @@ config = {
     "NEW_OTHER_KEYWORDS": os.getenv('NEW_OTHER_KEYWORDS').split(','),
     "URL_5": os.getenv('URL_5'),
     "IP": os.getenv('IP'),
+    "URL_6": os.getenv('URL_6')
 }
 
 ic(config)
@@ -187,6 +188,17 @@ def scrape_ip():
 
     return False
 
+def scrape_trigger():
+    url = config['URL_6']
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    meta = soup.find('meta', itemprop='availability')
+
+    if meta and meta.has_attr('content'):
+        return meta['content'] == "http://schema.org/InStock"
+
+    return False
 
 class AutoBots(commands.Bot):
     @tasks.loop(seconds=20)
@@ -250,6 +262,14 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('IP Update Message Sent.')
 
+    @tasks.loop(seconds=3600)
+    async def trigger_watcher(channel):
+        if scrape_trigger():
+            user_id = config['USER_ID']
+            message = f"{user_id} \Trigger in stock! \nLink: {config['URL_6']}"
+            await channel.send(message)
+            print('Trigger Message Sent.')
+
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
 @bot.event
@@ -262,7 +282,8 @@ async def on_ready():
             AutoBots.fish_watcher.start(channel),
             AutoBots.patch_watcher.start(channel),
             AutoBots.gpu_watcher.start(channel),
-            AutoBots.ip_watcher.start(channel)
+            AutoBots.ip_watcher.start(channel),
+            AutoBots.trigger_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
