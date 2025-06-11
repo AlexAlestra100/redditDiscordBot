@@ -262,7 +262,7 @@ class AutoBots(commands.Bot):
             await channel.send(message)
             print('IP Update Message Sent.')
 
-    @tasks.loop(seconds=3600)
+    @tasks.loop(seconds=86400)
     async def trigger_watcher(channel):
         if scrape_trigger():
             user_id = config['USER_ID']
