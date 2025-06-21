@@ -41,7 +41,7 @@ headers = {
 
 CACHE = []
 CACHE_EXPIRY = 120 * 60  # 15 minutes in seconds
-FISH_CURR_PRICE = 279.99
+FISH_CURR_PRICE = 199.99
 CURR_IP = config['IP']
 
 def scrape_reddit():
