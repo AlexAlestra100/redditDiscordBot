@@ -56,7 +56,6 @@ def scrape_reddit():
 
     titles = []
     base_url = "https://www.reddit.com"
-    ic(title_elements)
     for title_element in title_elements:
         if title_element.has_attr('slot') and title_element['slot'] == 'title':
             title = title_element.text
