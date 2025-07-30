@@ -48,13 +48,15 @@ def scrape_reddit():
     url = config['URL']
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
-    title_elements = soup.find_all('a', class_='block text-neutral-content-strong m-0 visited:text-neutral-content-weak font-semibold text-14 xs:text-16 mb-xs overflow-hidden')
+
+    title_elements = soup.find_all('a', class_='block text-neutral-content-strong m-0 visited:text-neutral-content-weak font-semibold text-16-scalable xs:text-18-scalable mb-2xs xs:mb-xs overflow-hidden')
 
     keywords = config['KEYWORDS']
     otherKeywords = config['OTHER_KEYWORDS']
 
     titles = []
     base_url = "https://www.reddit.com"
+    ic(title_elements)
     for title_element in title_elements:
         if title_element.has_attr('slot') and title_element['slot'] == 'title':
             title = title_element.text
