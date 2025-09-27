@@ -30,7 +30,7 @@ config = {
     "URL_6": os.getenv('URL_6')
 }
 
-ic(config)
+# ic(config)
 
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
@@ -280,10 +280,10 @@ async def on_ready():
             AutoBots.reddit_watcher.start(channel),
             # AutoBots.reddit_watcher2.start(channel),
             AutoBots.fish_watcher.start(channel),
-            AutoBots.patch_watcher.start(channel),
-            AutoBots.gpu_watcher.start(channel),
+            # AutoBots.patch_watcher.start(channel),
+            # AutoBots.gpu_watcher.start(channel),
             AutoBots.ip_watcher.start(channel),
-            AutoBots.trigger_watcher.start(channel)
+            # AutoBots.trigger_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
