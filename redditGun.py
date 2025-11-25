@@ -27,7 +27,8 @@ config = {
     "NEW_OTHER_KEYWORDS": os.getenv('NEW_OTHER_KEYWORDS').split(','),
     "URL_5": os.getenv('URL_5'),
     "IP": os.getenv('IP'),
-    "URL_6": os.getenv('URL_6')
+    "URL_6": os.getenv('URL_6'),
+    "URL_4": os.getenv('URL_4')
 }
 
 # ic(config)
@@ -35,7 +36,7 @@ config = {
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
     "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br",
+    "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive"
 }
 
@@ -156,26 +157,18 @@ def scrape_patch():
 
     return False
 
-def scrape_gpu():
-    urls = [
-        'https://www.zotacstore.com/us/zotac-gaming-geforce-rtx2080ti-11gb-gddr6-refurbished',
-        'https://www.zotacstore.com/us/zotac-gaming-geforce-rex2080ti-11gb-gddr6-refurbished',
-        'https://www.zotacstore.com/us/zotac-gaming-geforce-rtx2080ti-11gb-gddr6-352-bit-refurbished'
-    ]
+def scrape_pid():
+    url = config['URL_4']
 
-    data = []
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-    for url in urls:
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, 'html.parser')
+    product_info = soup.find_all('div', class_='col-xs-12 padding-v-10')[1]
+    ic(product_info.text)
+    if product_info and 'In Stock' in product_info.text:
+        return True
 
-        product_info = soup.find('div', class_='product-info-stock-sku')
-        if product_info:
-            stock_status = product_info.find('div', class_='stock available')
-            if stock_status:
-                data.append(url)
-
-    return data
+    return False
 
 def scrape_ip():
     global CURR_IP
@@ -188,15 +181,16 @@ def scrape_ip():
 
     return False
 
-def scrape_trigger():
+def scrape_toothless_lunchbag():
     url = config['URL_6']
-    response = requests.get(url)
+    response = requests.get(url, headers=headers, timeout=10)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    meta = soup.find('meta', itemprop='availability')
+    div = soup.find('div', class_='prices d-flex')
 
-    if meta and meta.has_attr('content'):
-        return meta['content'] == "http://schema.org/InStock"
+    in_stock_marker = div.find('span', class_=lambda c: c and 'priceModal' in c)
+    if in_stock_marker:
+        return True
 
     return False
 
@@ -246,13 +240,12 @@ class AutoBots(commands.Bot):
             print('Patch Message Sent.')
 
     @tasks.loop(seconds=3600)
-    async def gpu_watcher(channel):
-        gpuData = scrape_gpu()
-        if len(gpuData) > 0:
+    async def pid_watcher(channel):
+        if scrape_pid():
             user_id = config['USER_ID']
-            message = f"{user_id} \nZotac GPU Available \nLink: {gpuData}"
+            message = f"{user_id} \nPID Available \nLink: {config['URL_4']}"
             await channel.send(message)
-            print('GPU Message Sent.')
+            print('PID Message Sent.')
 
     @tasks.loop(seconds=86400)
     async def ip_watcher(channel):
@@ -263,12 +256,12 @@ class AutoBots(commands.Bot):
             print('IP Update Message Sent.')
 
     @tasks.loop(seconds=86400)
-    async def trigger_watcher(channel):
-        if scrape_trigger():
-            user_id = config['USER_ID']
-            message = f"{user_id} \nTrigger in stock! \nLink: {config['URL_6']}"
+    async def toothless_lunchbag_watcher(channel):
+        if scrape_toothless_lunchbag():
+            user_id = config['USER_ID_2']
+            message = f"{user_id} \nToothless Lunch Bag in stock! \nLink: {config['URL_6']}"
             await channel.send(message)
-            print('Trigger Message Sent.')
+            print('Toothless Lunch Bag Message Sent.')
 
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
 
@@ -277,13 +270,13 @@ async def on_ready():
         channel = bot.get_channel(config['CHANNEL_ID'])
         await bot.tree.sync()
         await asyncio.gather(
-            AutoBots.reddit_watcher.start(channel),
+            # AutoBots.reddit_watcher.start(channel),
             # AutoBots.reddit_watcher2.start(channel),
-            AutoBots.fish_watcher.start(channel),
+            # AutoBots.fish_watcher.start(channel),
             # AutoBots.patch_watcher.start(channel),
-            # AutoBots.gpu_watcher.start(channel),
+            AutoBots.pid_watcher.start(channel),
             AutoBots.ip_watcher.start(channel),
-            # AutoBots.trigger_watcher.start(channel)
+            AutoBots.toothless_lunchbag_watcher.start(channel)
         )
 
 @bot.hybrid_command(name='utils')
@@ -291,14 +284,14 @@ async def utils(ctx: commands.Context, ebill: str):
     internetBill = 60
     electricityBill = float(ebill)
 
-    iBillSplit = round(internetBill / 4, 2)
-    eBillSplit = round(electricityBill / 4, 2)
+    iBillSplit = round(internetBill / 3, 2)
+    eBillSplit = round(electricityBill / 3, 2)
 
     eachBill = iBillSplit + eBillSplit
 
     ourBillHalf = round(eBillSplit * 2, 2) - round(iBillSplit * 2, 2)
 
-    await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Four Ways: {eachBill} \nOur Bill: {ourBillHalf}')
+    await ctx.send(f'Internet Bill Each: {iBillSplit} \nElectricity Bill Each: {eBillSplit} \nBills Split Three Ways: {eachBill} \nOur Bill: {ourBillHalf}')
 
 @bot.hybrid_command(name='ip')
 async def ip(ctx: commands.Context):
