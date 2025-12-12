@@ -164,7 +164,7 @@ def scrape_pid():
     soup = BeautifulSoup(response.text, 'html.parser')
 
     product_info = soup.find_all('div', class_='col-xs-12 padding-v-10')[1]
-    ic(product_info.text)
+    # ic(product_info.text)
     if product_info and 'In Stock' in product_info.text:
         return True
 
@@ -264,11 +264,43 @@ class AutoBots(commands.Bot):
             print('Toothless Lunch Bag Message Sent.')
 
 bot = commands.Bot(command_prefix='/', intents=discord.Intents.all())
+bot.remove_command('help')
+
+# Optional: attach JournalCog if available
+journal_features = {
+    "enabled": False,
+    "admin_id": None,
+    "db_path": None,
+    "cog_cls": None,
+}
+try:
+    from pathlib import Path
+    import journalLog
+    admin_id = config.get('USER_ID')
+    db_path = Path('journal.db')
+    if hasattr(journalLog, 'JournalCog') and journalLog.JournalCog is not None:
+        journal_features.update({
+            "enabled": True,
+            "admin_id": admin_id,
+            "db_path": db_path,
+            "cog_cls": journalLog.JournalCog,
+        })
+except Exception as e:
+    # Proceed without journal features if import fails
+    print(f"Journal features not loaded: {e}")
 
 @bot.event
 async def on_ready():
         channel = bot.get_channel(config['CHANNEL_ID'])
-        await bot.tree.sync()
+        # Load JournalCog and sync commands (run once)
+        try:
+            if journal_features["enabled"] and journal_features["cog_cls"] is not None and not getattr(bot, "_journal_loaded", False):
+                cog = journal_features["cog_cls"](bot, db_path=journal_features["db_path"], admin_id=journal_features["admin_id"])
+                await bot.add_cog(cog)
+                await bot.tree.sync()
+                bot._journal_loaded = True
+        except Exception as e:
+            print(f"Failed to add/sync JournalCog: {e}")
         await asyncio.gather(
             # AutoBots.reddit_watcher.start(channel),
             # AutoBots.reddit_watcher2.start(channel),
