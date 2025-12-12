@@ -1,3 +1,4 @@
 .env
 /venv
 journal.db
+__pycache__/
